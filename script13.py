@@ -114,6 +114,7 @@ class SortingAlgorithms:
             pygame.time.wait(1)
         return arr
 
+
     def merge_sort_colors(self, arr):
         if len(arr) <= 1:
             return arr
