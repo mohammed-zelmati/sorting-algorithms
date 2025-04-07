@@ -6,18 +6,25 @@ Copier
 # Analyse des Algorithmes de Tri
 
 ## Algorithmes Implémentés :
+
 #### - Tri par sélection :
 ![Diagramme explicatif](imageAlgo/selection.png)
+
 #### - Tri à bulles :
 ![Diagramme explicatif](imageAlgo/bulles.png)
+
 #### - Tri par insertion :
 ![Diagramme explicatif](imageAlgo/insertion.png)
+
 #### - Tri fusion :
 ![Diagramme explicatif](imageAlgo/fusion.png)
+
 #### - Tri rapide :
 ![Diagramme explicatif](imageAlgo/rapide.png)
+
 #### - Tri par tas :
 ![Diagramme explicatif](imageAlgo/tas.png)
+
 #### - Tri à peigne : Cet algorithme fonctionne en réduisant progressivement l'écart (gap) entre les éléments comparés et en les échangeant si nécessaire. Cela permet de déplacer les éléments plus rapidement vers leur position correcte. On considère généralement que, dans le meilleur des cas: linéaire (en O(n)), et que, dans le pire des cas : Θ(n2). En moyenne : O(n log n).Tri non stable
 ![Diagramme explicatif](imageAlgo/peigne.png)
 
