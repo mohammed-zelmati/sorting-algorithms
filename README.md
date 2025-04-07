@@ -13,13 +13,14 @@ Copier
 ![Diagramme explicatif](imageAlgo/bulles.png)
 - Tri par insertion :
 ![Diagramme explicatif](imageAlgo/insertion.png)
-- Tri fusion :
+- Tri par fusion :
 ![Diagramme explicatif](imageAlgo/fusion.png)
 - Tri rapide :
 ![Diagramme explicatif](imageAlgo/rapide.png)
 - Tri par tas :
 ![Diagramme explicatif](imageAlgo/tas.png)
 - Tri à peigne :
+  
 ![Diagramme explicatif](imageAlgo/peigne.png)
 
 ## Performances
