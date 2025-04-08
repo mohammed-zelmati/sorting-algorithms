@@ -27,7 +27,8 @@ Il construit un tas (une structure de données similaire à un arbre binaire), e
 ![Diagramme explicatif](imageAlgo/tas.png)
 
 ### 7- Tri à peigne : 
-Cet algorithme fonctionne en réduisant progressivement l'écart (gap) entre les éléments comparés et en les échangeant si nécessaire. Cela permet de déplacer les éléments plus rapidement vers leur position correcte. 
+Cet algorithme fonctionne en réduisant progressivement l'écart (gap) entre les éléments comparés et en les échangeant si nécessaire. Cela permet de déplacer les éléments plus rapidement vers leur position correcte.
+![Diagramme explicatif](imageAlgo/peigne.png) 
 
 ### - Critère de comparaison des algorithmes de tri : 
 complexité temporelle (pire cas / en moyenne); complexité spatiale; stabilité; caractère en place.
