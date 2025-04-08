@@ -25,8 +25,13 @@ Copier
 #### - Tri par tas :
 ![Diagramme explicatif](imageAlgo/tas.png)
 
-#### - Tri à peigne : Cet algorithme fonctionne en réduisant progressivement l'écart (gap) entre les éléments comparés et en les échangeant si nécessaire. Cela permet de déplacer les éléments plus rapidement vers leur position correcte. On considère généralement que, dans le meilleur des cas: linéaire (en O(n)), et que, dans le pire des cas : Θ(n2). En moyenne : O(n log n).Tri non stable
-![Diagramme explicatif](imageAlgo/peigne.png)
+#### - Tri à peigne : 
+Cet algorithme fonctionne en réduisant progressivement l'écart (gap) entre les éléments comparés et en les échangeant si nécessaire. Cela permet de déplacer les éléments plus rapidement vers leur position correcte. On considère généralement que, dans le meilleur des cas: linéaire (en O(n)), et que, dans le pire des cas : Θ(n2). En moyenne : O(n log n).Tri non stable
+
+#### - Critère de comparaison des algorithmes de tri : 
+ complexité temporelle (pire cas / en
+ moyenne); complexité spatiale; stabilité; caractère en place.
+![Diagramme explicatif](imageAlgo/tableauComparaison.png)
 
 ## Performances
 Les temps d'exécution des algorithmes sont mesurés en fonction de la taille de la liste et de la distribution des éléments.
@@ -37,3 +42,5 @@ Les temps d'exécution des algorithmes sont mesurés en fonction de la taille de
 
 ## Conclusion
 Le tri rapide est l'algorithme de tri le plus rapide pour des listes de taille moyenne à grande. Cependant, pour de très petites listes, des algorithmes comme le tri par insertion peuvent être plus efficaces.
+
+
