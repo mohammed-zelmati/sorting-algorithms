@@ -1,133 +1,187 @@
 import pygame
 import random
-import time
 import heapq
 import math
+import time
+import string
+import tracemalloc
+
 
 pygame.init()
 
 class ColorManager:
     @staticmethod
-    def generate_random_colors(count=1000):
-        return [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) 
-                for _ in range(count)]
+    def generate_random_colors(count=500):
+        return {(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) 
+                for _ in range(count)} - {(0, 0, 0), (255, 255, 255)}
 
     @staticmethod
     def get_hue(rgb):
-        r, g, b = rgb
-        color = pygame.Color(r, g, b, 255)
-        return color.hsva[0]
+        return pygame.Color(*rgb).hsva[0]
 
     @staticmethod
-    def get_color_from_value(value, min_val=1, max_val=99):
-        ratio = (value - min_val) / (max_val - min_val)
-        r = int(255 * (1 - ratio))
-        g = int(255 * ratio)
-        b = 0
-        return (r, g, b)
+    def get_color_from_value(value, min_val=1, max_val=26):
+        ratio = (value - min_val) / (max_val - min_val) if max_val != min_val else 0
+        return (int(255 * (1 - ratio)), int(255 * ratio), 0)
 
 class NumberManager:
     @staticmethod
-    def generate_random_numbers(count=30):
-        return [random.randint(1, 99) for _ in range(count)]
+    def generate_random_numbers(count=50):
+        return random.sample(range(1, 100), min(count, 99))
+
+class WordManager:
+    @staticmethod
+    def generate_random_words(count=36):
+        words = set()
+        while len(words) < min(count, 36):
+            length = random.randint(3, 6)
+            word = ''.join(random.choices(string.ascii_lowercase, k=length))
+            words.add(word)
+        return list(words)
 
 class Visualizer:
     def __init__(self, screen, font):
         self.screen = screen
         self.font = font
+        self.width, self.height = screen.get_size()
+        self.center = (self.width // 2, (self.height + 200) // 2)
+        self.radius = min(self.width, self.height) // 5
+        self.small_font = pygame.font.SysFont('Arial', 14)  # Police plus petite
+
 
     def draw_rays(self, colors):
-        self.screen.fill((0, 0, 0))
-        width, height = self.screen.get_size()
-        center_x, center_y = width // 2, (height + 200) // 2
-        radius = min(width, height) // 4
-
-        pygame.draw.circle(self.screen, (255, 255, 255), (center_x, center_y), radius + 5)
-        pygame.draw.circle(self.screen, (234, 210, 222), (center_x, center_y), radius)
-
-        num_rays = len(colors)
-        angle_step = 360 / num_rays
-
-        for i, color in enumerate(colors):
+        self.screen.fill((30, 30, 30))
+        pygame.draw.circle(self.screen, (200, 200, 200), self.center, self.radius + 5)
+        pygame.draw.circle(self.screen, (234, 210, 222), self.center, self.radius)
+        colors_list = list(colors)
+        if not colors_list:
+            return
+        angle_step = 360 / len(colors_list)
+        for i, color in enumerate(colors_list):
             angle = math.radians(i * angle_step)
-            end_x = center_x + radius * math.cos(angle)
-            end_y = center_y + radius * math.sin(angle)
-            pygame.draw.line(self.screen, color, (center_x, center_y), (end_x, end_y), 2)
-
-        pygame.display.flip()
+            end = (self.center[0] + self.radius * math.cos(angle), 
+                   self.center[1] + self.radius * math.sin(angle))
+            pygame.draw.line(self.screen, color, self.center, end, 2)
 
     def draw_number_graph(self, numbers):
-        self.screen.fill((0, 0, 0))
-        y_offset = self.screen.get_height() - 150
-        case_width, spacing = 80, 1
-        max_width = self.screen.get_width()
-        x_pos, line_y_offset = 20, y_offset
+        self.screen.fill((30, 30, 30))
+        if not numbers:
+            return  # Rien à dessiner si la liste est vide
 
-        for i, val in enumerate(numbers[:30]):
-            if x_pos + case_width + spacing > max_width:
-                x_pos = 20
-                line_y_offset += 40
-            color = ColorManager.get_color_from_value(val)
-            pygame.draw.rect(self.screen, color, pygame.Rect(x_pos, line_y_offset, case_width, 30))
-            pygame.draw.rect(self.screen, (255, 255, 255), pygame.Rect(x_pos, line_y_offset, case_width, 30), 2)
-            text = self.font.render(f"{val}", True, (255, 255, 255))
-            self.screen.blit(text, (x_pos + 5, line_y_offset + 5))
-            x_pos += case_width + spacing
+        max_height = 300
+        base_y = self.height - 100
 
-        pygame.display.flip()
+        count = len(numbers)
+        total_spacing = 10 * (count - 1)
+        max_bar_width = (self.width - 100 - total_spacing) // count
+        bar_width = max(4, min(20, max_bar_width))
+        spacing = 10
+
+        min_val = min(numbers) if numbers else 1
+        max_val = max(numbers) if numbers else 99
+
+        for i, val in enumerate(numbers):
+            bar_height = int((val - min_val) / (max_val - min_val + 1e-6) * max_height)
+            x = 50 + i * (bar_width + spacing)
+            y = base_y - bar_height
+            color = ColorManager.get_color_from_value(val, min_val, max_val)
+
+            pygame.draw.rect(self.screen, color, (x, y, bar_width, bar_height))
+            pygame.draw.rect(self.screen, (200, 200, 200), (x, y, bar_width, bar_height), 2)
+
+            if bar_width > 10:  # Affiche le texte si la barre est assez large
+                text = self.small_font.render(str(val), True, (255, 255, 255))
+                text_rect = text.get_rect(center=(x + bar_width // 2, y - 15))
+                self.screen.blit(text, text_rect)
+
+    def draw_word_graph(self, words):
+        self.screen.fill((40, 40, 40))
+        y_offset = self.height - 150
+        cell_width, spacing = 100, 1
+        x_pos, line_y = 20, y_offset
+        for i, word in enumerate(words[:36]):
+            if x_pos + cell_width + spacing > self.width:
+                x_pos, line_y = 20, line_y + 40
+            val = ord(word[0]) - ord('a') + 1 if word else 1
+            color = ColorManager.get_color_from_value(val, 1, 26)
+            rect = pygame.Rect(x_pos, line_y, cell_width, 35)
+            pygame.draw.rect(self.screen, color, rect)
+            pygame.draw.rect(self.screen, (200, 200, 200), rect, 2)
+            text = self.font.render(word, True, (255, 255, 255))
+            self.screen.blit(text, (x_pos + 5, line_y + 7))
+            x_pos += cell_width + spacing
 
 class SortingAlgorithms:
     def __init__(self, visualizer):
         self.visualizer = visualizer
+        self.sorting = False
+        self.sort_iterator = None
 
-    # Algorithmes de tri pour les couleurs
-    def selection_sort_colors(self, arr):
+    def _visualize(self, arr, mode="colors"):
+        if mode == "colors":
+            self.visualizer.draw_rays(arr)
+        elif mode == "numbers":
+            self.visualizer.draw_number_graph(arr)
+        else:  # words
+            self.visualizer.draw_word_graph(arr)
+
+    def selection_sort(self, arr, mode="colors"):
+        arr = list(arr)
         for i in range(len(arr)):
             min_idx = i
             for j in range(i + 1, len(arr)):
-                if ColorManager.get_hue(arr[j]) < ColorManager.get_hue(arr[min_idx]):
+                val_j = ColorManager.get_hue(arr[j]) if mode == "colors" else arr[j]
+                val_min = ColorManager.get_hue(arr[min_idx]) if mode == "colors" else arr[min_idx]
+                if val_j < val_min:
                     min_idx = j
             arr[i], arr[min_idx] = arr[min_idx], arr[i]
-            self.visualizer.draw_rays(arr)
-            pygame.time.wait(1)
-        return arr
+            yield arr
 
-    def bubble_sort_colors(self, arr):
+    def bubble_sort(self, arr, mode="colors"):
+        arr = list(arr)
         n = len(arr)
         for i in range(n):
+            swapped = False
             for j in range(0, n - i - 1):
-                if ColorManager.get_hue(arr[j]) > ColorManager.get_hue(arr[j + 1]):
+                val_j = ColorManager.get_hue(arr[j]) if mode == "colors" else arr[j]
+                val_j1 = ColorManager.get_hue(arr[j + 1]) if mode == "colors" else arr[j + 1]
+                if val_j > val_j1:
                     arr[j], arr[j + 1] = arr[j + 1], arr[j]
-            self.visualizer.draw_rays(arr)
-            pygame.time.wait(1)
-        return arr
+                    swapped = True
+            if not swapped:
+                break
+            yield arr
 
-    def insertion_sort_colors(self, arr):
+    def insertion_sort(self, arr, mode="colors"):
+        arr = list(arr)
         for i in range(1, len(arr)):
             key = arr[i]
             j = i - 1
-            while j >= 0 and ColorManager.get_hue(key) < ColorManager.get_hue(arr[j]):
+            key_val = ColorManager.get_hue(key) if mode == "colors" else key
+            while j >= 0 and (ColorManager.get_hue(arr[j]) if mode == "colors" else arr[j]) > key_val:
                 arr[j + 1] = arr[j]
                 j -= 1
             arr[j + 1] = key
-            self.visualizer.draw_rays(arr)
-            pygame.time.wait(1)
-        return arr
+            yield arr
 
-
-    def merge_sort_colors(self, arr):
+    def merge_sort(self, arr, mode="colors"):
+        arr = list(arr)
         if len(arr) <= 1:
-            return arr
+            yield arr
+            return
         mid = len(arr) // 2
-        left = self.merge_sort_colors(arr[:mid])
-        right = self.merge_sort_colors(arr[mid:])
-        return self._merge_colors(left, right)
-
-    def _merge_colors(self, left, right):
-        result = []
+        left = arr[:mid]
+        right = arr[mid:]
+        
+        yield from self.merge_sort(left, mode)
+        yield from self.merge_sort(right, mode)
+        
         i = j = 0
+        result = []
         while i < len(left) and j < len(right):
-            if ColorManager.get_hue(left[i]) < ColorManager.get_hue(right[j]):
+            left_val = ColorManager.get_hue(left[i]) if mode == "colors" else left[i]
+            right_val = ColorManager.get_hue(right[j]) if mode == "colors" else right[j]
+            if left_val <= right_val:
                 result.append(left[i])
                 i += 1
             else:
@@ -135,232 +189,186 @@ class SortingAlgorithms:
                 j += 1
         result.extend(left[i:])
         result.extend(right[j:])
-        self.visualizer.draw_rays(result)
-        pygame.time.wait(1)
-        return result
+        yield result
 
-    def quick_sort_colors(self, arr):
+    def quick_sort(self, arr, mode="colors"):
+        arr = list(arr)
         if len(arr) <= 1:
-            return arr
+            yield arr
+            return
         pivot = arr[len(arr) // 2]
-        pivot_hue = ColorManager.get_hue(pivot)
-        left = [x for x in arr if ColorManager.get_hue(x) < pivot_hue]
-        middle = [x for x in arr if ColorManager.get_hue(x) == pivot_hue]
-        right = [x for x in arr if ColorManager.get_hue(x) > pivot_hue]
-        result = self.quick_sort_colors(left) + middle + self.quick_sort_colors(right)
-        self.visualizer.draw_rays(result)
-        pygame.time.wait(1)
-        return result
-
-    def heap_sort_colors(self, arr):
-        arr_with_hue = [(ColorManager.get_hue(color), color) for color in arr]
-        heapq.heapify(arr_with_hue)
-        result = [heapq.heappop(arr_with_hue)[1] for _ in range(len(arr_with_hue))]
-        self.visualizer.draw_rays(result)
-        pygame.time.wait(1)
-        return result
-
-    def comb_sort_colors(self, arr):
-        gap = len(arr)
-        swapped = True
-        while gap != 1 or swapped:
-            gap = max(1, int(gap / 1.3))
-            swapped = False
-            for i in range(len(arr) - gap):
-                if ColorManager.get_hue(arr[i]) > ColorManager.get_hue(arr[i + gap]):
-                    arr[i], arr[i + gap] = arr[i + gap], arr[i]
-                    swapped = True
-            self.visualizer.draw_rays(arr)
-            pygame.time.wait(1)
-        return arr
-
-    # Algorithmes de tri pour les nombres
-    def selection_sort_numbers(self, arr):
-        for i in range(len(arr)):
-            min_idx = i
-            for j in range(i + 1, len(arr)):
-                if arr[j] < arr[min_idx]:
-                    min_idx = j
-            arr[i], arr[min_idx] = arr[min_idx], arr[i]
-            self.visualizer.draw_number_graph(arr)
-            pygame.time.wait(1000)
-        return arr
-
-    def bubble_sort_numbers(self, arr):
-        n = len(arr)
-        for i in range(n):
-            for j in range(0, n - i - 1):
-                if arr[j] > arr[j + 1]:
-                    arr[j], arr[j + 1] = arr[j + 1], arr[j]
-            self.visualizer.draw_number_graph(arr)
-            pygame.time.wait(1000)
-        return arr
-
-    def insertion_sort_numbers(self, arr):
-        for i in range(1, len(arr)):
-            key = arr[i]
-            j = i - 1
-            while j >= 0 and key < arr[j]:
-                arr[j + 1] = arr[j]
-                j -= 1
-            arr[j + 1] = key
-            self.visualizer.draw_number_graph(arr)
-            pygame.time.wait(1000)
-        return arr
-
-    def merge_sort_numbers(self, arr):
-        if len(arr) <= 1:
-            return arr
-        mid = len(arr) // 2
-        left = self.merge_sort_numbers(arr[:mid])
-        right = self.merge_sort_numbers(arr[mid:])
-        merged = self._merge_numbers(left, right)
-        self.visualizer.draw_number_graph(merged)
-        pygame.time.wait(1000)
-        return merged
-
-    def _merge_numbers(self, left, right):
-        result = []
-        i = j = 0
-        while i < len(left) and j < len(right):
-            if left[i] < right[j]:
-                result.append(left[i])
-                i += 1
+        pivot_val = ColorManager.get_hue(pivot) if mode == "colors" else pivot
+        left = []
+        middle = []
+        right = []
+        for x in arr:
+            x_val = ColorManager.get_hue(x) if mode == "colors" else x
+            if x_val < pivot_val:
+                left.append(x)
+            elif x_val == pivot_val:
+                middle.append(x)
             else:
-                result.append(right[j])
-                j += 1
-        result.extend(left[i:])
-        result.extend(right[j:])
-        return result
+                right.append(x)
+        
+        yield from self.quick_sort(left, mode)
+        yield from self.quick_sort(right, mode)
+        yield left + middle + right
 
-    def quick_sort_numbers(self, arr):
-        if len(arr) <= 1:
-            return arr
-        pivot = arr[len(arr) // 2]
-        left = [x for x in arr if x < pivot]
-        middle = [x for x in arr if x == pivot]
-        right = [x for x in arr if x > pivot]
-        result = self.quick_sort_numbers(left) + middle + self.quick_sort_numbers(right)
-        self.visualizer.draw_number_graph(result)
-        pygame.time.wait(1000)
-        return result
+    def heap_sort(self, arr, mode="colors"):
+        arr = list(arr)
+        if mode == "colors":
+            arr_with_hue = [(ColorManager.get_hue(color), color) for color in arr]
+            heapq.heapify(arr_with_hue)
+            result = []
+            while arr_with_hue:
+                result.append(heapq.heappop(arr_with_hue)[1])
+        else:
+            heapq.heapify(arr)
+            result = []
+            while arr:
+                result.append(heapq.heappop(arr))
+        yield result
 
-    def heap_sort_numbers(self, arr):
-        heapq.heapify(arr)
-        sorted_arr = [heapq.heappop(arr) for _ in range(len(arr))]
-        self.visualizer.draw_number_graph(sorted_arr)
-        pygame.time.wait(1000)
-        return sorted_arr
-
-    def comb_sort_numbers(self, arr):
+    def comb_sort(self, arr, mode="colors"):
+        arr = list(arr)
         gap = len(arr)
         swapped = True
         while gap != 1 or swapped:
             gap = max(1, int(gap / 1.3))
             swapped = False
             for i in range(len(arr) - gap):
-                if arr[i] > arr[i + gap]:
+                val_i = ColorManager.get_hue(arr[i]) if mode == "colors" else arr[i]
+                val_igap = ColorManager.get_hue(arr[i + gap]) if mode == "colors" else arr[i + gap]
+                if val_i > val_igap:
                     arr[i], arr[i + gap] = arr[i + gap], arr[i]
                     swapped = True
-            self.visualizer.draw_number_graph(arr)
-            pygame.time.wait(1000)
-        return arr
+            yield arr
+
+    def start_sort(self, algorithm, data, mode):
+        self.sorting = True
+        self.sort_iterator = algorithm(data, mode)
 
 class Interface:
     def __init__(self):
-        self.screen = pygame.display.set_mode((1280, 740))
-        pygame.display.set_caption("Tri Interactif")
-        self.font = pygame.font.SysFont('Arial', 20)
+        self.screen = pygame.display.set_mode((1280, 720))
+        pygame.display.set_caption("Visualisation des Algorithmes de Tri")
+        self.font = pygame.font.SysFont('Arial', 24, bold=True)
+        self.medium_font = pygame.font.SysFont('Arial', 16, bold=True)
         self.visualizer = Visualizer(self.screen, self.font)
         self.sorting = SortingAlgorithms(self.visualizer)
-        self.mode = "couleurs"
+        self.mode = "colors"
         self.data = ColorManager.generate_random_colors()
         self.algorithm_times = {}
-        self.result_text = ""
+        self.running = False
+        self.last_update = time.time()
+        self.update_interval = 0.05
 
         self.algorithms = [
-            ("Tri par sélection", self.sorting.selection_sort_colors, self.sorting.selection_sort_numbers),
-            ("Tri à bulles", self.sorting.bubble_sort_colors, self.sorting.bubble_sort_numbers),
-            ("Tri par insertion", self.sorting.insertion_sort_colors, self.sorting.insertion_sort_numbers),
-            ("Tri fusion", self.sorting.merge_sort_colors, self.sorting.merge_sort_numbers),
-            ("Tri rapide", self.sorting.quick_sort_colors, self.sorting.quick_sort_numbers),
-            ("Tri par tas", self.sorting.heap_sort_colors, self.sorting.heap_sort_numbers),
-            ("Tri à peigne", self.sorting.comb_sort_colors, self.sorting.comb_sort_numbers),
-            ("Réinitialiser", lambda x: self.reset(), lambda x: self.reset())
+            ("Tri par sélection", self.sorting.selection_sort),
+            ("Tri à bulles", self.sorting.bubble_sort),
+            ("Tri par insertion", self.sorting.insertion_sort),
+            ("Tri fusion", self.sorting.merge_sort),
+            ("Tri rapide", self.sorting.quick_sort),
+            ("Tri par tas", self.sorting.heap_sort),
+            ("Tri à peigne", self.sorting.comb_sort),
+            ("Réinitialiser", lambda x, mode: self.reset())
         ]
-        self.rects = [pygame.Rect(10, 20 + i * 60, 200, 50) for i in range(len(self.algorithms))]
-        self.mode_rects = [pygame.Rect(320, 20, 150, 50), pygame.Rect(480, 20, 150, 50)]
+
+        self.choose_button = pygame.Rect(10, 50, 250, 60)
+        self.dropdown_open = False
+        self.selected_algorithm = 0
+        self.dropdown_options = [pygame.Rect(10, 110 + i * 60, 250, 60) 
+                              for i in range(len(self.algorithms))]
+        self.mode_buttons = [
+            pygame.Rect(300, 50, 200, 60),  # Couleurs
+            pygame.Rect(510, 50, 200, 60),  # Nombres
+            pygame.Rect(720, 50, 200, 60)   # Mots
+        ]
 
     def reset(self):
-        if self.mode == "couleurs":
+        self.running = False
+        self.sorting.sorting = False
+        if self.mode == "colors":
             self.data = ColorManager.generate_random_colors()
-        else:
+        elif self.mode == "numbers":
             self.data = NumberManager.generate_random_numbers()
-        self.result_text = ""
-        self.algorithm_times = {}
-
-    def detect_click(self, x, y, width, height, pos):
-        return x <= pos[0] <= x + width and y <= pos[1] <= y + height
+        else:  # words
+            self.data = WordManager.generate_random_words()
+        self.algorithm_times.clear()
 
     def run(self):
+        clock = pygame.time.Clock()
         while True:
-            self.screen.fill((0, 0, 0))
-            if self.mode == "couleurs":
-                self.visualizer.draw_rays(self.data)
-            else:
-                self.visualizer.draw_number_graph(self.data)
-
-            for i, (name, _, _) in enumerate(self.algorithms):
-                pygame.draw.rect(self.screen, (100, 100, 255), self.rects[i])
-                text = self.font.render(name, True, (255, 255, 255))
-                self.screen.blit(text, (self.rects[i].x + 10, self.rects[i].y + 10))
-
-            pygame.draw.rect(self.screen, (100, 255, 100), self.mode_rects[0])
-            pygame.draw.rect(self.screen, (100, 255, 100), self.mode_rects[1])
-            text_colors = self.font.render("Tri de couleurs", True, (255, 0, 0))
-            text_numbers = self.font.render("Tri de nombres", True, (255, 0, 0))
-            self.screen.blit(text_colors, (self.mode_rects[0].x + 10, self.mode_rects[0].y + 10))
-            self.screen.blit(text_numbers, (self.mode_rects[1].x + 10, self.mode_rects[1].y + 10))
-
-            if self.algorithm_times:
-                sorted_times = sorted(self.algorithm_times.items(), key=lambda x: x[1])
-                y_offset = 120
-                for name, t in sorted_times:
-                    text = self.font.render(f"{name}: {t:.4f} ms", True, (255, 255, 255))
-                    self.screen.blit(text, (550, y_offset))
-                    y_offset += 20
-
-            if self.result_text:
-                text_result = self.font.render(f"Temps d'exécution: {self.result_text} ms", True, (255, 255, 255))
-                text_width = self.font.size(f"Temps d'exécution: {self.result_text} ms")[0]
-                self.screen.blit(text_result, ((self.screen.get_width() - text_width) // 2, self.screen.get_height() - 50))
-
-            pygame.display.flip()
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     return
-                elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    if self.detect_click(self.mode_rects[0].x, self.mode_rects[0].y, 150, 50, event.pos):
-                        self.mode = "couleurs"
-                        self.reset()
-                    elif self.detect_click(self.mode_rects[1].x, self.mode_rects[1].y, 150, 50, event.pos):
-                        self.mode = "nombres"
-                        self.reset()
-                    for idx, rect in enumerate(self.rects):
-                        if self.detect_click(rect.x, rect.y, rect.width, rect.height, event.pos):
-                            name, color_sort, num_sort = self.algorithms[idx]
-                            algo = color_sort if self.mode == "couleurs" else num_sort
-                            if name == "Réinitialiser":
-                                self.reset()
-                            else:
-                                start = time.time()
-                                self.data = algo(self.data)
-                                elapsed = (time.time() - start) * 1000
-                                self.result_text = f"{elapsed:.2f}"
-                                self.algorithm_times[name] = elapsed
-                            break
+                if event.type == pygame.MOUSEBUTTONDOWN and not self.running:
+                    pos = pygame.mouse.get_pos()
+                    if self.choose_button.collidepoint(pos):
+                        self.dropdown_open = not self.dropdown_open
+                    elif self.dropdown_open:
+                        for i, rect in enumerate(self.dropdown_options):
+                            if rect.collidepoint(pos):
+                                self.dropdown_open = False
+                                self.selected_algorithm = i
+                                name, algo = self.algorithms[i]
+                                if name != "Réinitialiser":
+                                    self.running = True
+                                    self.start_time = time.time()
+                                    tracemalloc.start()  # Démarrer le traqueur mémoire
+                                    self.sorting.start_sort(algo, self.data, self.mode)
+                                else:
+                                    algo(None, None)
+                    for i, btn in enumerate(self.mode_buttons):
+                        if btn.collidepoint(pos):
+                            self.mode = ["colors", "numbers", "words"][i]
+                            self.reset()
 
-            pygame.time.wait(1000)
+            if self.running and self.sorting.sorting:
+                current_time = time.time()
+                if current_time - self.last_update >= self.update_interval:
+                    try:
+                        self.data = next(self.sorting.sort_iterator)
+                        self.last_update = current_time
+                    except StopIteration:
+                        self.running = False
+                        self.sorting.sorting = False
+                        algo_name = self.algorithms[self.selected_algorithm][0]
+                        duration_ms = (time.time() - self.start_time) * 1000
+                        current, peak = tracemalloc.get_traced_memory()
+                        tracemalloc.stop()
+                        self.algorithm_times[algo_name] = (duration_ms, peak / 1024)  # en Ko
 
+
+            self.sorting._visualize(self.data, self.mode)
+            self._draw_ui()
+            pygame.display.flip()
+            clock.tick(60)
+
+    def _draw_ui(self):
+        pygame.draw.rect(self.screen, 
+                        (60, 60, 200) if not self.choose_button.collidepoint(pygame.mouse.get_pos()) 
+                        else (80, 80, 255), self.choose_button, border_radius=10)
+        text = self.font.render("Choisir le tri", True, (255, 255, 255))
+        self.screen.blit(text, (self.choose_button.x + 20, self.choose_button.y + 15))
+
+        if self.dropdown_open:
+            for i, rect in enumerate(self.dropdown_options):
+                color = (80, 80, 255) if rect.collidepoint(pygame.mouse.get_pos()) else (60, 60, 200)
+                pygame.draw.rect(self.screen, color, rect, border_radius=10)
+                text = self.font.render(self.algorithms[i][0], True, (255, 255, 255))
+                self.screen.blit(text, (rect.x + 20, rect.y + 15))
+
+        for i, btn in enumerate(self.mode_buttons):
+            color = (80, 255, 80) if btn.collidepoint(pygame.mouse.get_pos()) else (60, 200, 60)
+            pygame.draw.rect(self.screen, color, btn, border_radius=10)
+            label = ["Couleurs", "Nombres", "Mots"][i]
+            text = self.font.render(label, True, (255, 255, 255))
+            self.screen.blit(text, (btn.x + 20, btn.y + 15))
+
+        for i, (name, (t, mem)) in enumerate(sorted(self.algorithm_times.items(), key=lambda x: x[1][0] if x[1] else float('inf'))):
+            time_str = f"{t:.2f} ms" if t is not None else "En cours..."
+            mem_str = f"{mem:.1f} Ko" if mem is not None else ""
+            text = self.medium_font.render(f"{name}: Temps: {time_str} | Mémoire:  {mem_str}", True, (200, 200, 255))
+            self.screen.blit(text, (800, 120 + i * 28))
