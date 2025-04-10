@@ -164,32 +164,77 @@ class SortingAlgorithms:
             arr[j + 1] = key
             yield arr
 
+
+
     def merge_sort(self, arr, mode="colors"):
         arr = list(arr)
-        if len(arr) <= 1:
-            yield arr
-            return
-        mid = len(arr) // 2
-        left = arr[:mid]
-        right = arr[mid:]
-        
-        yield from self.merge_sort(left, mode)
-        yield from self.merge_sort(right, mode)
-        
-        i = j = 0
-        result = []
-        while i < len(left) and j < len(right):
-            left_val = ColorManager.get_hue(left[i]) if mode == "colors" else left[i]
-            right_val = ColorManager.get_hue(right[j]) if mode == "colors" else right[j]
-            if left_val <= right_val:
-                result.append(left[i])
-                i += 1
-            else:
-                result.append(right[j])
-                j += 1
-        result.extend(left[i:])
-        result.extend(right[j:])
-        yield result
+
+        def merge_sort_recursive(sub_arr):
+            if len(sub_arr) <= 1:
+                return sub_arr
+
+            mid = len(sub_arr) // 2
+            left = merge_sort_recursive(sub_arr[:mid])
+            right = merge_sort_recursive(sub_arr[mid:])
+
+            return merge(left, right)
+
+        def merge(left, right):
+            merged = []
+            i = j = 0
+
+            while i < len(left) and j < len(right):
+                left_val = ColorManager.get_hue(left[i]) if mode == "colors" else left[i]
+                right_val = ColorManager.get_hue(right[j]) if mode == "colors" else right[j]
+
+                if left_val <= right_val:
+                    merged.append(left[i])
+                    i += 1
+                else:
+                    merged.append(right[j])
+                    j += 1
+
+            merged.extend(left[i:])
+            merged.extend(right[j:])
+            return merged
+
+        # Recopie dans une copie de l'array et fait du yield à chaque fusion
+        def merge_sort_with_yield(sub_arr):
+            if len(sub_arr) <= 1:
+                yield sub_arr
+                return sub_arr
+
+            mid = len(sub_arr) // 2
+            left = sub_arr[:mid]
+            right = sub_arr[mid:]
+
+            left = yield from merge_sort_with_yield(left)
+            right = yield from merge_sort_with_yield(right)
+
+            merged = []
+            i = j = 0
+
+            while i < len(left) and j < len(right):
+                left_val = ColorManager.get_hue(left[i]) if mode == "colors" else left[i]
+                right_val = ColorManager.get_hue(right[j]) if mode == "colors" else right[j]
+
+                if left_val <= right_val:
+                    merged.append(left[i])
+                    i += 1
+                else:
+                    merged.append(right[j])
+                    j += 1
+
+            merged.extend(left[i:])
+            merged.extend(right[j:])
+
+            # Générer l'état intermédiaire
+            yield merged
+            return merged
+
+        yield from merge_sort_with_yield(arr)
+    
+    
 
     def quick_sort(self, arr, mode="colors"):
         arr = list(arr)
