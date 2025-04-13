@@ -1,0 +1,24 @@
+{
+    "timestamp": "20250413_120022_260",
+    "algorithm": "Selection Sort",
+    "data_type": "numbers",
+    "data_details": {
+        "count": 50,
+        "first_5": [
+            84,
+            24,
+            49,
+            45,
+            39
+        ],
+        "last_5": [
+            54,
+            79,
+            66,
+            23,
+            25
+        ]
+    },
+    "time_ms": 409.679,
+    "memory_peak_kb": 2.06
+}

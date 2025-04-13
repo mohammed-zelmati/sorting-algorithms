@@ -1,0 +1,24 @@
+{
+    "timestamp": "20250413_120048_326",
+    "algorithm": "Bubble Sort",
+    "data_type": "words",
+    "data_details": {
+        "count": 30,
+        "first_5": [
+            "ampmmcz",
+            "tjy",
+            "ujzppto",
+            "xszjet",
+            "ffjr"
+        ],
+        "last_5": [
+            "ixmau",
+            "ordoiu",
+            "yzpwpnc",
+            "harwlca",
+            "uuag"
+        ]
+    },
+    "time_ms": 3340.077,
+    "memory_peak_kb": 1.68
+}

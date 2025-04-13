@@ -1,0 +1,10 @@
+{
+  "numbers": [
+    {
+      "algorithm": "Bubble Sort",
+      "time_ms": 11188.288,
+      "memory_kb": 2.71,
+      "timestamp": "2025-04-13T12:30:58.473175"
+    }
+  ]
+}
